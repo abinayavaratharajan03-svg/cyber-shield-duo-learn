@@ -10,6 +10,7 @@ import { AvoidScams } from "@/components/AvoidScams";
 import { Quiz } from "@/components/Quiz";
 import { Report } from "@/components/Report";
 import { Training } from "@/components/Training";
+import { InAction } from "@/components/InAction";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
@@ -45,6 +46,7 @@ function Page() {
             <Quiz />
             <Report />
             <Training />
+            <InAction />
             <Contact />
           </main>
           <Footer />
