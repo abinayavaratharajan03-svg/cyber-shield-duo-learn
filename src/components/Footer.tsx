@@ -1,5 +1,5 @@
-import { Shield } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import logo from "@/assets/cybershield-logo.webp";
 
 export function Footer() {
   const { t } = useI18n();
@@ -8,12 +8,10 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid md:grid-cols-4 gap-8">
         <div className="md:col-span-2">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--neon)] to-[var(--cyan-glow)] flex items-center justify-center">
-              <Shield className="w-5 h-5 text-background" strokeWidth={2.5} />
-            </div>
+            <img src={logo} alt="CyberShield" className="w-10 h-10 rounded-lg object-cover ring-1 ring-[var(--cyan-glow)]/40" />
             <span className="font-display font-bold text-lg">Cyber<span className="text-gradient">Shield</span></span>
           </div>
-          <p className="text-sm text-muted-foreground max-w-sm">{t("footer_tag")}</p>
+          <p className="text-sm text-muted-foreground max-w-sm">Protecting People from Digital Threats</p>
         </div>
         <div>
           <div className="font-display font-bold mb-3">Quick links</div>

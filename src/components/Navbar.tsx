@@ -1,4 +1,5 @@
-import { Shield, Moon, Sun, Languages, Menu, X } from "lucide-react";
+import { Moon, Sun, Languages, Menu, X } from "lucide-react";
+import logo from "@/assets/cybershield-logo.webp";
 import { useState } from "react";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -24,9 +25,7 @@ export function Navbar() {
       <div className="glass-strong border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <a href="#home" className="flex items-center gap-2 group">
-            <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--neon)] to-[var(--cyan-glow)] flex items-center justify-center pulse-glow">
-              <Shield className="w-5 h-5 text-background" strokeWidth={2.5} />
-            </div>
+            <img src={logo} alt="CyberShield" className="w-9 h-9 rounded-lg object-cover ring-1 ring-[var(--cyan-glow)]/40 pulse-glow" />
             <span className="font-display font-bold text-lg tracking-tight">
               Cyber<span className="text-gradient">Shield</span>
             </span>
