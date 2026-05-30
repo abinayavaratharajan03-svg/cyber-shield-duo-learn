@@ -6,7 +6,6 @@ const programs = [
   { icon: School, title: "School Workshops", body: "Class 6–12 modules with games, comics & Tamil-medium support.", meta: "200+ schools", price: "Free" },
   { icon: GraduationCap, title: "College Seminars", body: "Bug bounty intro, social-engineering labs, career path talks.", meta: "Half / full day", price: "Sponsored" },
   { icon: Briefcase, title: "Business Awareness", body: "Phishing drills, SOC basics, incident response for SMB teams.", meta: "Monthly cohort", price: "₹4,999/seat" },
-  { icon: BadgeCheck, title: "Certifications", body: "CyberShield Certified Aware — recognized by 50+ employers.", meta: "6-week online", price: "₹1,499" },
 ];
 
 export function Training() {
