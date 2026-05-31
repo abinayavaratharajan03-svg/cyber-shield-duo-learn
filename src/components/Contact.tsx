@@ -1,10 +1,12 @@
-import { Mail, MessageCircle, Instagram, Phone, MapPin, Send, User, Shield } from "lucide-react";
+import { Mail, MessageCircle, Instagram, Phone, MapPin, Send, User, Shield, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import logo from "@/assets/cybershield-logo.webp";
+import { submitContact } from "@/lib/cybershield.functions";
 
 const PHONE = "9629661715";
 const WA_NUMBER = "919629661715";
-const EMAIL = "Cybershield0323@gmail.com";
+const EMAIL = "cybershield0323@gmail.com";
 const INSTA = "cybershield03";
 
 const details = [
@@ -16,14 +18,25 @@ const details = [
 ];
 
 export function Contact() {
+  const send = useServerFn(submitContact);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent("CyberShield enquiry from " + form.name)}&body=${body}`;
-    setSent(true);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await send({ data: form });
+      setDone(true);
+      setForm({ name: "", email: "", message: "" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
