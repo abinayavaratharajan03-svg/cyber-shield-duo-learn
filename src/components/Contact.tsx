@@ -170,11 +170,18 @@ export function Contact() {
               />
             </div>
 
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {done && (
+              <div className="flex items-center gap-2 text-sm text-[var(--success)] glass rounded-lg px-3 py-2 border border-[var(--success)]/30">
+                <CheckCircle2 className="w-4 h-4" /> Thanks for contacting CyberShield.
+              </div>
+            )}
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-bold inline-flex items-center justify-center gap-2 glow-hover"
+              disabled={submitting}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-bold inline-flex items-center justify-center gap-2 glow-hover disabled:opacity-60"
             >
-              <Send className="w-4 h-4" /> {sent ? "Opening your email..." : "Submit Message"}
+              <Send className="w-4 h-4" /> {submitting ? "Sending..." : "Submit Message"}
             </button>
 
             <div className="pt-4 text-center text-xs text-muted-foreground border-t border-border/40">
