@@ -30,7 +30,7 @@ export function InAction() {
             : "We'll be sharing real photos from our upcoming school and college awareness programs here."}
         </p>
         <a
-          href="mailto:Cybershield0323@gmail.com?subject=Book%20Awareness%20Session"
+          href="#training"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--cyan-glow)]/15 text-[var(--cyan-glow)] font-semibold border border-[var(--cyan-glow)]/30 hover:bg-[var(--cyan-glow)]/25 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
         >
           <CalendarPlus className="w-5 h-5" />

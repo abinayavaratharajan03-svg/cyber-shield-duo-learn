@@ -1,10 +1,12 @@
-import { Mail, MessageCircle, Instagram, Phone, MapPin, Send, User, Shield } from "lucide-react";
+import { Mail, MessageCircle, Instagram, Phone, MapPin, Send, User, Shield, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import logo from "@/assets/cybershield-logo.webp";
+import { submitContact } from "@/lib/cybershield.functions";
 
 const PHONE = "9629661715";
 const WA_NUMBER = "919629661715";
-const EMAIL = "Cybershield0323@gmail.com";
+const EMAIL = "cybershield0323@gmail.com";
 const INSTA = "cybershield03";
 
 const details = [
@@ -16,14 +18,25 @@ const details = [
 ];
 
 export function Contact() {
+  const send = useServerFn(submitContact);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent("CyberShield enquiry from " + form.name)}&body=${body}`;
-    setSent(true);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await send({ data: form });
+      setDone(true);
+      setForm({ name: "", email: "", message: "" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -157,11 +170,18 @@ export function Contact() {
               />
             </div>
 
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {done && (
+              <div className="flex items-center gap-2 text-sm text-[var(--success)] glass rounded-lg px-3 py-2 border border-[var(--success)]/30">
+                <CheckCircle2 className="w-4 h-4" /> Thanks for contacting CyberShield.
+              </div>
+            )}
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-bold inline-flex items-center justify-center gap-2 glow-hover"
+              disabled={submitting}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-bold inline-flex items-center justify-center gap-2 glow-hover disabled:opacity-60"
             >
-              <Send className="w-4 h-4" /> {sent ? "Opening your email..." : "Submit Message"}
+              <Send className="w-4 h-4" /> {submitting ? "Sending..." : "Submit Message"}
             </button>
 
             <div className="pt-4 text-center text-xs text-muted-foreground border-t border-border/40">
