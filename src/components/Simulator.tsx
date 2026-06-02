@@ -510,13 +510,27 @@ export function Simulator() {
                 <p className="mt-3 text-center text-xs text-muted-foreground font-mono">Tap your verdict — instant reveal.</p>
               </>
             ) : (
-              <div className="mt-5 space-y-3 fade-up">
-                <div className={`p-4 rounded-xl ${reveal === current.answer ? "bg-[var(--success)]/15 border border-[var(--success)]/40" : "bg-destructive/15 border border-destructive/40"}`}>
+              <div className="mt-5 space-y-3 fade-up" key={current.id}>
+                <div
+                  className={`p-4 rounded-xl animate-scale-in ${
+                    reveal === current.answer
+                      ? "bg-[var(--success)]/15 border border-[var(--success)]/40 shadow-[0_0_30px_-5px_var(--success)]"
+                      : "bg-destructive/15 border border-destructive/40 shadow-[0_0_30px_-5px_hsl(var(--destructive))]"
+                  }`}
+                >
                   <div className="flex items-center gap-2 font-semibold">
                     {reveal === current.answer ? (
-                      <><CheckCircle2 className="w-5 h-5 text-[var(--success)]" /> Correct — this {current.answer === "scam" ? "is a scam" : "is safe"}! <span className="ml-auto text-xs font-mono">+10</span></>
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-[var(--success)] animate-pulse" />
+                        <span className="text-[var(--success)]">Correct!</span>
+                        <span className="ml-auto text-xs font-mono">+10 pts</span>
+                      </>
                     ) : (
-                      <><AlertOctagon className="w-5 h-5 text-destructive" /> Wrong — this was actually {current.answer}.</>
+                      <>
+                        <AlertOctagon className="w-5 h-5 text-destructive animate-pulse" />
+                        <span className="text-destructive">Wrong Answer</span>
+                        <span className="ml-auto text-xs font-mono opacity-70">actually {current.answer}</span>
+                      </>
                     )}
                   </div>
                 </div>
@@ -533,29 +547,32 @@ export function Simulator() {
                 )}
 
                 <div className="rounded-xl p-4 glass">
-                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">Explanation</div>
+                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">
+                    {reveal === current.answer ? "Why this matters" : "Why this is dangerous"}
+                  </div>
                   <p className="text-sm text-muted-foreground">{current.why}</p>
                 </div>
 
                 <div className="rounded-xl p-4 border border-[var(--cyan-glow)]/40 bg-[var(--cyan-glow)]/5">
-                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">Prevention tip</div>
+                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">How to stay safe</div>
                   <p className="text-sm">{current.tip}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   {mode.count === "infinite" ? (
                     <>
-                      <button onClick={finish} className="py-3 rounded-lg glass hover:glow-border font-semibold text-sm">Finish quiz</button>
-                      <button onClick={next} className="py-3 rounded-lg bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-semibold text-sm">Next scenario →</button>
+                      <button onClick={finish} className="py-3 rounded-lg glass hover:glow-border font-semibold text-sm">Finish Quiz</button>
+                      <button onClick={next} className="py-3 rounded-lg bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-semibold text-sm">Next Question →</button>
                     </>
                   ) : (
                     <button onClick={next} className="col-span-2 py-3 rounded-lg bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-semibold text-sm">
-                      {idx + 1 >= (mode.count as number) ? "See results →" : "Next scenario →"}
+                      {idx + 1 >= (mode.count as number) ? "See Results →" : "Next Question →"}
                     </button>
                   )}
                 </div>
               </div>
             )}
+
           </div>
         </div>
       )}
