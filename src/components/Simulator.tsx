@@ -239,8 +239,62 @@ const bank: Sim[] = [
     why: "Verifying the receiver name is the right habit.", tip: "Always verify the receiver name before tapping Pay." },
 ];
 
-type Category2 = (typeof bank)[number]["categories"][number];
-const categories: ("All" | Category2)[] = ["All", "Student Scams", "Banking", "Social Media", "Shopping", "UPI Payments", "Latest"];
+type SuperCat = {
+  id: string;
+  title: string;
+  tagline: string;
+  examples: string[];
+  icon: typeof Target;
+  accent: string;
+  match: (s: Sim) => boolean;
+};
+
+const SUPER_CATEGORIES: SuperCat[] = [
+  {
+    id: "student",
+    title: "Student Scams",
+    tagline: "internships, scholarships, gaming, fake jobs",
+    examples: ["Fake internships", "Scholarship traps", "Free gaming UC", "Fake job offers"],
+    icon: GraduationCap,
+    accent: "from-emerald-400 to-cyan-400",
+    match: (s) =>
+      s.categories.includes("Student Scams") ||
+      ["game", "intern", "scholar", "edu", "youtube", "instafollow", "job"].includes(s.id),
+  },
+  {
+    id: "banking",
+    title: "Banking & UPI Scams",
+    tagline: "OTP, KYC, QR, UPI, refunds",
+    examples: ["OTP reversal", "Fake KYC update", "QR code traps", "UPI collect requests", "Refund scams"],
+    icon: Banknote,
+    accent: "from-amber-400 to-rose-400",
+    match: (s) =>
+      s.categories.includes("Banking") ||
+      s.categories.includes("UPI Payments") ||
+      ["loanagent", "loanapp", "ipo", "crypto", "refund"].includes(s.id),
+  },
+  {
+    id: "social",
+    title: "Social Media Scams",
+    tagline: "WhatsApp, Instagram, Telegram, romance",
+    examples: ["WhatsApp impersonation", "Instagram recovery", "Telegram investment", "Romance scams"],
+    icon: MessageCircle,
+    accent: "from-pink-400 to-violet-400",
+    match: (s) =>
+      s.categories.includes("Social Media") ||
+      ["wa", "ig", "telegram", "romance", "matrim", "psd"].includes(s.id),
+  },
+  {
+    id: "advanced",
+    title: "Advanced Threats",
+    tagline: "AI voice, deepfake, SIM swap, phishing",
+    examples: ["AI voice cloning", "Deepfake CEO calls", "SIM swap attacks", "Phishing pages"],
+    icon: ShieldAlert,
+    accent: "from-cyan-400 to-indigo-500",
+    match: (s) =>
+      ["aivoice", "deepfake", "sim", "upgrade", "phish", "screen", "apk", "appstoreapk", "courierbomb", "police"].includes(s.id),
+  },
+];
 
 type Mode = { id: string; label: string; tagline: string; count: number | "infinite"; icon: typeof Target };
 const MODES: Mode[] = [
@@ -262,37 +316,36 @@ function shuffle<T>(arr: T[]): T[] {
 type Stage = "idle" | "mode" | "playing" | "done";
 type Answered = { sim: Sim; chose: "safe" | "scam"; correct: boolean };
 
-function rankFor(pct: number) {
-  if (pct >= 86) return { name: "Scam Spotter Pro", color: "var(--cyan-glow)", emoji: "🛡️" };
-  if (pct >= 61) return { name: "Cyber Guardian", color: "var(--neon)", emoji: "⚡" };
-  if (pct >= 31) return { name: "Smart Clicker", color: "var(--success)", emoji: "🎯" };
-  return { name: "Beginner Defender", color: "hsl(var(--muted-foreground))", emoji: "🌱" };
+function achievementFor(score: number) {
+  if (score >= 300) return { name: "Scam Spotter Pro", emoji: "🏆" };
+  if (score >= 200) return { name: "Cyber Guardian", emoji: "🥇" };
+  if (score >= 100) return { name: "Smart Clicker", emoji: "🥈" };
+  if (score >= 50) return { name: "Cyber Beginner", emoji: "🥉" };
+  return { name: "Keep practicing", emoji: "🌱" };
 }
 
 export function Simulator() {
   const { t } = useI18n();
-  const [filter, setFilter] = useState<(typeof categories)[number]>("All");
   const [stage, setStage] = useState<Stage>("idle");
   const [mode, setMode] = useState<Mode | null>(null);
+  const [activeCat, setActiveCat] = useState<SuperCat | null>(null);
   const [queue, setQueue] = useState<Sim[]>([]);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Answered[]>([]);
   const [reveal, setReveal] = useState<"safe" | "scam" | null>(null);
   const [reviewing, setReviewing] = useState(false);
-  const [startCard, setStartCard] = useState<Sim | null>(null);
 
-  const filtered = useMemo(
-    () => (filter === "All" ? bank : bank.filter((s) => s.categories.includes(filter as Category))),
-    [filter],
-  );
-
-  const openMode = (s: Sim) => { setStartCard(s); setStage("mode"); };
+  const openCategory = (c: SuperCat) => { setActiveCat(c); setStage("mode"); };
 
   const startQuiz = (m: Mode) => {
+    if (!activeCat) return;
+    const pool = bank.filter(activeCat.match);
+    const source = pool.length >= 3 ? pool : bank;
+    const shuffled = shuffle(source);
+    const initial = m.count === "infinite"
+      ? shuffled.slice(0, Math.min(10, shuffled.length))
+      : shuffled.slice(0, Math.min(m.count, shuffled.length));
     setMode(m);
-    const pool = shuffle(bank);
-    const head = startCard ? [startCard, ...pool.filter(p => p.id !== startCard.id)] : pool;
-    const initial = m.count === "infinite" ? head.slice(0, 10) : head.slice(0, m.count);
     setQueue(initial);
     setIdx(0);
     setAnswers([]);
@@ -300,22 +353,25 @@ export function Simulator() {
     setStage("playing");
   };
 
-  // top up queue for unlimited mode
+  // top up queue for unlimited mode (keep within category when possible)
   useEffect(() => {
-    if (stage !== "playing" || !mode || mode.count !== "infinite") return;
+    if (stage !== "playing" || !mode || mode.count !== "infinite" || !activeCat) return;
     if (queue.length - idx <= 3) {
       setQueue((q) => {
         const seen = new Set(q.map((s) => s.id));
-        const more = shuffle(bank.filter((s) => !seen.has(s.id)));
-        return more.length ? [...q, ...more.slice(0, 8)] : [...q, ...shuffle(bank).slice(0, 8)];
+        const pool = bank.filter(activeCat.match);
+        const fresh = shuffle(pool.filter((s) => !seen.has(s.id)));
+        if (fresh.length) return [...q, ...fresh.slice(0, 8)];
+        // recycle pool if exhausted
+        return [...q, ...shuffle(pool).slice(0, 8)];
       });
     }
-  }, [idx, queue.length, stage, mode]);
+  }, [idx, queue.length, stage, mode, activeCat]);
 
   const current = queue[idx];
-  const score = answers.filter((a) => a.correct).length * 10;
-  const wrong = answers.filter((a) => !a.correct).length;
   const correctCount = answers.filter((a) => a.correct).length;
+  const wrong = answers.filter((a) => !a.correct).length;
+  const score = correctCount * 10;
   const totalForPct = mode?.count === "infinite" ? answers.length : (mode?.count ?? 0);
   const pct = totalForPct ? Math.round((correctCount / totalForPct) * 100) : 0;
   const progress = mode?.count === "infinite"
@@ -331,25 +387,22 @@ export function Simulator() {
   const next = () => {
     setReveal(null);
     const nextIdx = idx + 1;
-    if (mode?.count !== "infinite" && nextIdx >= (mode?.count ?? 0)) {
-      setStage("done");
-      return;
-    }
+    if (mode?.count !== "infinite" && nextIdx >= (mode?.count ?? 0)) { setStage("done"); return; }
     setIdx(nextIdx);
   };
 
   const finish = () => setStage("done");
 
   const resetAll = () => {
-    setStage("idle"); setMode(null); setQueue([]); setIdx(0);
-    setAnswers([]); setReveal(null); setStartCard(null); setReviewing(false);
+    setStage("idle"); setMode(null); setActiveCat(null); setQueue([]); setIdx(0);
+    setAnswers([]); setReveal(null); setReviewing(false);
   };
 
   const retry = () => { if (mode) { setReviewing(false); startQuiz(mode); } };
 
   const share = async () => {
-    const r = rankFor(pct);
-    const text = `I scored ${score} (${pct}%) on the CyberShield Scam Simulator and earned the ${r.name} ${r.emoji} badge. Test yourself: ${typeof window !== "undefined" ? window.location.origin : ""}/#simulator`;
+    const a = achievementFor(score);
+    const text = `I scored ${score} pts (${pct}%) on the CyberShield Scam Simulator and earned the ${a.name} ${a.emoji} badge. Test yourself: ${typeof window !== "undefined" ? window.location.origin : ""}/#simulator`;
     try {
       if (typeof navigator !== "undefined" && (navigator as any).share) {
         await (navigator as any).share({ title: "CyberShield Quiz", text });
@@ -363,78 +416,57 @@ export function Simulator() {
   const closeModal = () => resetAll();
 
   return (
-    <Section id="simulator" eyebrow="Hands-on training" title={t("sim_title")} subtitle={t("sim_sub")}>
-      <div className="flex flex-wrap gap-2 mb-8">
-        {categories.map((c) => {
-          const isActive = filter === c;
+    <Section id="simulator" eyebrow="Cyber awareness game" title={t("sim_title")} subtitle={t("sim_sub")}>
+      {/* 4 BIG CATEGORY CARDS */}
+      <div className="grid sm:grid-cols-2 gap-5">
+        {SUPER_CATEGORIES.map((c) => {
+          const Icon = c.icon;
+          const count = bank.filter(c.match).length;
           return (
             <button
-              key={c}
-              onClick={() => setFilter(c)}
-              className={`px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all ${
-                isActive
-                  ? "bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background shadow-[0_0_20px_var(--cyan-glow)]"
-                  : "glass hover:glow-border text-muted-foreground hover:text-foreground"
-              }`}
+              key={c.id}
+              onClick={() => openCategory(c)}
+              className="text-left glass rounded-3xl p-6 sm:p-8 glow-hover group relative overflow-hidden min-h-[220px]"
             >
-              {c}
+              <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br ${c.accent} opacity-20 blur-3xl group-hover:opacity-40 transition-opacity`} />
+              <div className="relative flex flex-col h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${c.accent} flex items-center justify-center text-background shadow-[0_0_30px_var(--cyan-glow)]`}>
+                    <Icon className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-1 rounded-full glass">
+                    {count}+ scenarios
+                  </span>
+                </div>
+                <h3 className="font-display font-bold text-xl sm:text-2xl mb-1">{c.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{c.tagline}</p>
+                <ul className="flex flex-wrap gap-1.5 mb-5">
+                  {c.examples.map((e) => (
+                    <li key={e} className="text-[10px] font-mono text-[var(--cyan-glow)]/90 px-2 py-1 rounded-full border border-[var(--cyan-glow)]/30">
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+                <span className="mt-auto inline-flex items-center gap-1 text-sm font-mono text-[var(--cyan-glow)] group-hover:gap-2 transition-all">
+                  Start quiz →
+                </span>
+              </div>
             </button>
           );
         })}
-        <span className="ml-auto self-center text-xs font-mono text-muted-foreground">
-          {bank.length}+ scenarios • randomised
-        </span>
       </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => openMode(s)}
-            className="text-left glass rounded-2xl p-6 glow-hover group relative overflow-hidden"
-          >
-            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[var(--neon)]/10 blur-2xl group-hover:bg-[var(--cyan-glow)]/20 transition-colors" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl glass flex items-center justify-center text-[var(--cyan-glow)]">
-                  <s.icon className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-1 rounded-full glass">
-                  {s.channel}
-                </span>
-              </div>
-              <h3 className="font-display font-bold text-lg mb-1">{s.title}</h3>
-              <p className="text-sm text-muted-foreground">Start a randomised quiz seeded with this scenario</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {s.categories.slice(0, 2).map((c) => (
-                  <span key={c} className="text-[10px] font-mono text-[var(--cyan-glow)]/80 px-2 py-0.5 rounded-full border border-[var(--cyan-glow)]/30">
-                    {c}
-                  </span>
-                ))}
-              </div>
-              <span className="mt-4 inline-flex items-center gap-1 text-xs font-mono text-[var(--cyan-glow)]">Launch quiz →</span>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground font-mono text-sm">
-          No simulations in this category yet.
-        </div>
-      )}
 
       {/* MODE PICKER */}
-      {stage === "mode" && (
-        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto fade-up" onClick={closeModal}>
-          <div className="glass-strong rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative my-8" onClick={(e) => e.stopPropagation()}>
+      {stage === "mode" && activeCat && (
+        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={closeModal}>
+          <div className="glass-strong rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative my-8 animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <button onClick={closeModal} className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center hover:glow-border">
               <X className="w-4 h-4" />
             </button>
             <div className="text-center mb-6">
-              <div className="text-xs font-mono uppercase tracking-[0.3em] text-[var(--cyan-glow)] mb-2">Choose your challenge</div>
-              <h3 className="font-display text-2xl sm:text-3xl font-bold">How sharp do you feel today?</h3>
-              <p className="text-sm text-muted-foreground mt-2">Questions are pulled at random from {bank.length}+ real scam scenarios.</p>
+              <div className="text-xs font-mono uppercase tracking-[0.3em] text-[var(--cyan-glow)] mb-2">{activeCat.title}</div>
+              <h3 className="font-display text-2xl sm:text-3xl font-bold">Pick your challenge</h3>
+              <p className="text-sm text-muted-foreground mt-2">Random questions pulled live from this category.</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               {MODES.map((m) => {
@@ -459,7 +491,7 @@ export function Simulator() {
 
       {/* QUIZ PLAYING */}
       {stage === "playing" && current && mode && (
-        <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto fade-up">
+        <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="glass-strong rounded-3xl max-w-xl w-full p-6 relative my-8">
             <button onClick={closeModal} className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center hover:glow-border">
               <X className="w-4 h-4" />
@@ -510,7 +542,7 @@ export function Simulator() {
                 <p className="mt-3 text-center text-xs text-muted-foreground font-mono">Tap your verdict — instant reveal.</p>
               </>
             ) : (
-              <div className="mt-5 space-y-3 fade-up" key={current.id}>
+              <div className="mt-5 space-y-3 animate-fade-in" key={current.id}>
                 <div
                   className={`p-4 rounded-xl animate-scale-in ${
                     reveal === current.answer
@@ -522,13 +554,13 @@ export function Simulator() {
                     {reveal === current.answer ? (
                       <>
                         <CheckCircle2 className="w-5 h-5 text-[var(--success)] animate-pulse" />
-                        <span className="text-[var(--success)]">Correct!</span>
+                        <span className="text-[var(--success)]">✓ Correct!</span>
                         <span className="ml-auto text-xs font-mono">+10 pts</span>
                       </>
                     ) : (
                       <>
                         <AlertOctagon className="w-5 h-5 text-destructive animate-pulse" />
-                        <span className="text-destructive">Wrong Answer</span>
+                        <span className="text-destructive">❌ Wrong</span>
                         <span className="ml-auto text-xs font-mono opacity-70">actually {current.answer}</span>
                       </>
                     )}
@@ -554,7 +586,7 @@ export function Simulator() {
                 </div>
 
                 <div className="rounded-xl p-4 border border-[var(--cyan-glow)]/40 bg-[var(--cyan-glow)]/5">
-                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">How to stay safe</div>
+                  <div className="text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-1">Prevention tip</div>
                   <p className="text-sm">{current.tip}</p>
                 </div>
 
@@ -579,23 +611,41 @@ export function Simulator() {
 
       {/* RESULTS */}
       {stage === "done" && mode && (() => {
-        const r = rankFor(pct);
+        const ach = achievementFor(score);
         const mistakes = answers.filter((a) => !a.correct);
         const maxScore = mode.count === "infinite" ? answers.length * 10 : (mode.count as number) * 10;
+        const isChampion = pct >= 90;
+        const isExcellent = pct >= 80 && !isChampion;
         return (
-          <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto fade-up" onClick={closeModal}>
-            <div className="glass-strong rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative my-8" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={closeModal}>
+            <div className="glass-strong rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative my-8 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               <button onClick={closeModal} className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center hover:glow-border">
                 <X className="w-4 h-4" />
               </button>
 
               {!reviewing ? (
                 <>
+                  {(isChampion || isExcellent) && (
+                    <div className={`mb-5 p-4 rounded-2xl text-center animate-scale-in ${
+                      isChampion
+                        ? "bg-gradient-to-r from-[var(--neon)]/20 to-[var(--cyan-glow)]/20 border border-[var(--cyan-glow)]/50 shadow-[0_0_50px_-10px_var(--cyan-glow)]"
+                        : "bg-[var(--success)]/15 border border-[var(--success)]/40 shadow-[0_0_40px_-10px_var(--success)]"
+                    }`}>
+                      <div className="text-3xl mb-1">{isChampion ? "🔥" : "🎉"}</div>
+                      <div className="font-display text-xl font-bold">
+                        {isChampion ? "CyberShield Champion" : "Excellent Work!"}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isChampion ? "Your cyber awareness level is outstanding." : "You can identify most online scams."}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="text-center">
-                    <div className="text-5xl mb-2">{r.emoji}</div>
-                    <div className="text-xs font-mono uppercase tracking-[0.3em] text-[var(--cyan-glow)]">Rank unlocked</div>
-                    <h3 className="font-display text-3xl sm:text-4xl font-bold mt-1" style={{ color: `var(--cyan-glow)` }}>{r.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-2">{mode.label} • {answers.length} scenarios</p>
+                    <div className="text-5xl mb-2 animate-scale-in">{ach.emoji}</div>
+                    <div className="text-xs font-mono uppercase tracking-[0.3em] text-[var(--cyan-glow)]">Achievement unlocked</div>
+                    <h3 className="font-display text-3xl sm:text-4xl font-bold mt-1 text-[var(--cyan-glow)]">{ach.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-2">{activeCat?.title} • {mode.label}</p>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
@@ -618,6 +668,19 @@ export function Simulator() {
                     </div>
                   </div>
 
+                  <div className="mt-5 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    {[
+                      { pts: 50, name: "🥉 Cyber Beginner" },
+                      { pts: 100, name: "🥈 Smart Clicker" },
+                      { pts: 200, name: "🥇 Cyber Guardian" },
+                      { pts: 300, name: "🏆 Scam Spotter Pro" },
+                    ].map((b) => (
+                      <div key={b.pts} className={`px-3 py-2 rounded-lg border ${score >= b.pts ? "border-[var(--cyan-glow)]/60 text-[var(--cyan-glow)] bg-[var(--cyan-glow)]/5" : "border-border text-muted-foreground opacity-60"}`}>
+                        {b.pts}+ pts — {b.name}
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="grid sm:grid-cols-2 gap-3 mt-6">
                     <button onClick={retry} className="py-3 rounded-lg bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-semibold inline-flex items-center justify-center gap-2">
                       <RotateCcw className="w-4 h-4" /> Retry quiz
@@ -625,11 +688,11 @@ export function Simulator() {
                     <button onClick={() => setReviewing(true)} disabled={!mistakes.length} className="py-3 rounded-lg glass hover:glow-border font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50">
                       <BookOpen className="w-4 h-4" /> Review mistakes ({mistakes.length})
                     </button>
-                    <button onClick={share} className="py-3 rounded-lg glass hover:glow-border font-semibold inline-flex items-center justify-center gap-2">
-                      <Share2 className="w-4 h-4" /> Share score
-                    </button>
                     <button onClick={() => startQuiz(MODES[3])} className="py-3 rounded-lg glass hover:glow-border font-semibold inline-flex items-center justify-center gap-2">
                       <InfinityIcon className="w-4 h-4" /> Practice more
+                    </button>
+                    <button onClick={share} className="py-3 rounded-lg glass hover:glow-border font-semibold inline-flex items-center justify-center gap-2">
+                      <Share2 className="w-4 h-4" /> Share score
                     </button>
                   </div>
 
