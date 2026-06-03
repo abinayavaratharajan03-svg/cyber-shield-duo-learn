@@ -456,6 +456,98 @@ export function Simulator() {
         })}
       </div>
 
+      {/* INTRO SCREEN */}
+      {stage === "intro" && activeCat && (() => {
+        const total = bank.filter(activeCat.match).length || bank.length;
+        const difficulty = activeCat.id === "advanced" ? "Advanced" : activeCat.id === "banking" ? "Intermediate" : "Beginner → Intermediate";
+        const estMin = Math.max(3, Math.round(total * 0.4));
+        const learnings = [
+          "How scammers manipulate victims",
+          "How to identify phishing attempts",
+          "How to avoid OTP scams",
+          "How to spot fake job offers",
+          "How to identify QR scams",
+          "How to stay safe online",
+        ];
+        return (
+          <div className="fixed inset-0 z-[60] bg-background/85 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={closeModal}>
+            <div className="glass-strong rounded-3xl max-w-2xl w-full p-6 sm:p-8 relative my-8 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              <button onClick={closeModal} className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center hover:glow-border">
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="text-center mb-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[10px] font-mono uppercase tracking-[0.25em] text-[var(--cyan-glow)] mb-3">
+                  <ShieldAlert className="w-3 h-3" /> {activeCat.title}
+                </div>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold leading-tight">
+                  Welcome to <span className="text-[var(--cyan-glow)]">CyberShield Scam Simulator</span>
+                </h3>
+                <p className="text-sm text-muted-foreground mt-3 max-w-lg mx-auto">
+                  This simulator helps you identify real-world cyber scams using realistic scenarios. Read each situation carefully and decide whether it is <span className="text-[var(--success)] font-semibold">Safe</span> or a <span className="text-destructive font-semibold">Scam</span>. Learn from mistakes and improve your cyber awareness.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div className="glass rounded-xl p-3 text-center">
+                  <Target className="w-4 h-4 text-[var(--cyan-glow)] mx-auto mb-1" />
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Scenarios</div>
+                  <div className="font-display font-bold text-lg">{total}+</div>
+                </div>
+                <div className="glass rounded-xl p-3 text-center">
+                  <Zap className="w-4 h-4 text-[var(--cyan-glow)] mx-auto mb-1" />
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Difficulty</div>
+                  <div className="font-display font-bold text-xs leading-tight pt-1">{difficulty}</div>
+                </div>
+                <div className="glass rounded-xl p-3 text-center">
+                  <Sparkles className="w-4 h-4 text-[var(--cyan-glow)] mx-auto mb-1" />
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Est. time</div>
+                  <div className="font-display font-bold text-lg">~{estMin} min</div>
+                </div>
+                <div className="glass rounded-xl p-3 text-center">
+                  <Award className="w-4 h-4 text-[var(--cyan-glow)] mx-auto mb-1" />
+                  <div className="text-[10px] font-mono uppercase text-muted-foreground">Reward</div>
+                  <div className="font-display font-bold text-lg">+10 pts</div>
+                </div>
+              </div>
+
+              <div className="glass rounded-2xl p-5 mb-5">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[var(--cyan-glow)] mb-3">
+                  <BookOpen className="w-4 h-4" /> What you will learn
+                </div>
+                <ul className="grid sm:grid-cols-2 gap-2 text-sm">
+                  {learnings.map((l) => (
+                    <li key={l} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-[var(--success)] mt-0.5 shrink-0" />
+                      <span>{l}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="rounded-2xl p-4 mb-6 border border-[var(--cyan-glow)]/40 bg-gradient-to-r from-[var(--neon)]/10 to-[var(--cyan-glow)]/10">
+                <div className="flex gap-3">
+                  <AlertOctagon className="w-5 h-5 text-[var(--cyan-glow)] shrink-0 mt-0.5 animate-pulse" />
+                  <p className="text-sm">
+                    <span className="font-semibold text-[var(--cyan-glow)]">Remember:</span> Cyber criminals create urgency and fear. Always verify before taking action.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setStage("mode")}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-[var(--neon)] to-[var(--cyan-glow)] text-background font-display font-bold text-lg glow-hover inline-flex items-center justify-center gap-2"
+              >
+                <Zap className="w-5 h-5" /> Start Simulation
+              </button>
+              <p className="text-center text-[10px] font-mono text-muted-foreground mt-3 uppercase tracking-wider">
+                Next: pick how many questions you want to face
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MODE PICKER */}
       {stage === "mode" && activeCat && (
         <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={closeModal}>
