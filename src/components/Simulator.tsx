@@ -313,7 +313,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-type Stage = "idle" | "mode" | "playing" | "done";
+type Stage = "idle" | "intro" | "mode" | "playing" | "done";
 type Answered = { sim: Sim; chose: "safe" | "scam"; correct: boolean };
 
 function achievementFor(score: number) {
