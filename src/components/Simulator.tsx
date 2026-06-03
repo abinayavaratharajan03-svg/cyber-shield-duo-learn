@@ -335,7 +335,7 @@ export function Simulator() {
   const [reveal, setReveal] = useState<"safe" | "scam" | null>(null);
   const [reviewing, setReviewing] = useState(false);
 
-  const openCategory = (c: SuperCat) => { setActiveCat(c); setStage("mode"); };
+  const openCategory = (c: SuperCat) => { setActiveCat(c); setStage("intro"); };
 
   const startQuiz = (m: Mode) => {
     if (!activeCat) return;
